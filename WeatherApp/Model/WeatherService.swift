@@ -6,3 +6,4 @@
 //
 //  API 통신 및 데이터 처리
 
+import Foundation
