@@ -24,37 +24,68 @@ final class MainViewController: UIViewController {
     }
 
     private func setupUI() {
+        // 스크롤 뷰
         view.addSubview(scrollView)
-        scrollView.snp.makeConstraints { $0.edges.equalToSuperview() }
+        scrollView.snp.makeConstraints { make in
+            make.top.left.right.equalToSuperview()
+            make.bottom.equalTo(view.safeAreaLayoutGuide).inset(60) // 하단 탭바 공간 확보
+        }
 
+        // 콘텐츠 뷰 (세로 스택)
         scrollView.addSubview(contentView)
         contentView.axis = .vertical
         contentView.spacing = 16
-        contentView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-            $0.width.equalToSuperview()
+        contentView.alignment = .fill
+        contentView.distribution = .equalSpacing
+
+        contentView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+            make.width.equalTo(scrollView)
         }
 
+        // 각 셀 추가
         let regionCell = RegionWeatherCell()
         let hourlyCell = HourlyWeatherCell()
         let weeklyCell = WeeklyForecastCell()
 
         [regionCell, hourlyCell, weeklyCell].forEach {
             contentView.addArrangedSubview($0)
+            $0.snp.makeConstraints { $0.height.greaterThanOrEqualTo(120) } // 기본 높이
         }
 
-        view.addSubview(segmentedControl)
-        segmentedControl.snp.makeConstraints {
-            $0.left.right.equalToSuperview().inset(16)
-            $0.bottom.equalTo(view.safeAreaLayoutGuide).inset(8)
+        // 하단 탭바
+        let bottomBar = UIView()
+        bottomBar.backgroundColor = UIColor.systemTeal
+        bottomBar.layer.cornerRadius = 20
+        bottomBar.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        view.addSubview(bottomBar)
+
+        bottomBar.snp.makeConstraints { make in
+            make.left.right.bottom.equalToSuperview()
+            make.height.equalTo(60)
         }
 
-        view.addSubview(flashlightButton)
-        flashlightButton.snp.makeConstraints {
-            $0.right.equalToSuperview().inset(16)
-            $0.bottom.equalTo(segmentedControl.snp.top).offset(20)
-            $0.width.height.equalTo(40)
+        // 세그먼트
+        bottomBar.addSubview(segmentedControl)
+        segmentedControl.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.centerX.equalToSuperview()
+        }
+
+        // 플래시 버튼
+        bottomBar.addSubview(flashlightButton)
+        flashlightButton.setImage(UIImage(systemName: "flashlight.on.fill"), for: .normal)
+        flashlightButton.tintColor = .white
+        flashlightButton.addTarget(self, action: #selector(flashlightTapped), for: .touchUpInside)
+        flashlightButton.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.right.equalToSuperview().inset(16)
+            make.width.height.equalTo(32)
         }
     }
-}
 
+    @objc private func flashlightTapped() {
+        let listVC = ListViewController()
+        navigationController?.pushViewController(listVC, animated: true)
+    }
+}
