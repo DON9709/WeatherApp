@@ -10,16 +10,15 @@
 import Foundation
 
 struct CurrentWeather: Codable {
-    let dt: Int
-    let sunrise: Int
-    let sunset: Int
-    let temp: Double
-    let feels_like: Double
-    let pressure: Int
-    let humidity: Int
-    let uvi: Double
-    let clouds: Int
-    let visibility: Int
-    let wind_speed: Double
     let weather: [Weather]
+    let main: WeatherMain
+    let locationName: String
+    
+    var description: String {
+        weather.first?.description ?? ""
+    }
+    
+    var icon: String {
+        weather.first?.icon ?? ""
+    }
 }

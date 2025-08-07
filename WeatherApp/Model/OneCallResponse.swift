@@ -12,8 +12,18 @@ struct OneCallResponse: Codable {
     let lat: Double
     let lon: Double
     let timezone: String
-    let timezone_offset: Int
+    let timezoneOffset: Int
     let current: CurrentWeather
     let hourly: [HourlyWeather]
     let daily: [DailyWeather]
+    
+    enum CodingKeys: String, CodingKey {
+        case lat
+        case lon
+        case timezone
+        case timezoneOffset = "timezone_offset"
+        case current
+        case hourly
+        case daily
+    }
 }
