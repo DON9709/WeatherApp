@@ -9,33 +9,17 @@
 
 import Foundation
 
-struct WeatherResponse: Codable {
-    let name: String
-    let weather: [Weather]
-    let main: WeatherMain
-}
-
-struct Weather: Codable {
-    let id: Int
-    let main: String
-    let description: String
-    let icon: String
-}
-
-struct WeatherMain: Codable {
+struct CurrentWeather: Codable {
+    let dt: Int
+    let sunrise: Int
+    let sunset: Int
     let temp: Double
     let feels_like: Double
-    let temp_min: Double
-    let temp_max: Double
-    let pressure: Double
-    let humidity: Double
-    
-    enum CodingKeys: String, CodingKey {
-        case temp
-        case feels_like = "feels_like"
-        case temp_min = "temp_min"
-        case temp_max = "temp_max"
-        case pressure
-        case humidity
-    }
+    let pressure: Int
+    let humidity: Int
+    let uvi: Double
+    let clouds: Int
+    let visibility: Int
+    let wind_speed: Double
+    let weather: [Weather]
 }
