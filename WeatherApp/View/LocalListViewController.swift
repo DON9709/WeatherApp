@@ -12,6 +12,7 @@ final class ListViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .plain)
     private var locations: [String] = []
     private var selectedIndexSet: Set<Int> = []
+    private let separatorView = UIView()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -128,13 +129,22 @@ final class ButtonRowCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        backgroundColor = UIColor.systemGray6
+        backgroundColor = UIColor.systemGray2
         
         addButton.setImage(UIImage(systemName: "plus"), for: .normal)
         addButton.tintColor = .systemBlue
+        addButton.layer.borderWidth = 1
+        addButton.layer.borderColor = UIColor.systemGray4.cgColor
+        addButton.layer.cornerRadius = 8
+        addButton.clipsToBounds = true
         
         deleteButton.setImage(UIImage(systemName: "trash"), for: .normal)
         deleteButton.tintColor = .red
+        deleteButton.layer.borderWidth = 1
+        deleteButton.layer.borderColor = UIColor.systemGray4.cgColor
+        deleteButton.layer.cornerRadius = 8
+        deleteButton.clipsToBounds = true
+       
         
         let stack = UIStackView(arrangedSubviews: [addButton, deleteButton])
         stack.axis = .horizontal
