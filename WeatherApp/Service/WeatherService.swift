@@ -9,7 +9,6 @@
 import Foundation
 
 class WeatherService {
-    private var dataSource = [ForecastWeather]
     
     // URL 쿼리 아이템들.
     // 서울역 위경도.
@@ -46,7 +45,7 @@ class WeatherService {
     }
     
     // 서버에서 현재 날씨 데이터를 불러오는 메서드.
-    private func fetchCurrentWeatherData() {
+    private func fetchCurrentWeatherData(completion: @escaping (CurrentWeather?) -> Void) {
         var urlComponents = URLComponents(string:"https://api.openweathermap.org/data/2.5/weather")
         urlComponents?.queryItems = self.urlQueryItems
         
@@ -56,26 +55,13 @@ class WeatherService {
         }
         
         fetchData(url: url) { [weak self] (result: CurrentWeather?) in
-            guard let self, let result else { return }
-            
-            DispatchQueue.main.async {
-                self.tempLabel.text = "\(Int(result.main.temp))°C"
-                self.tempMinLabel.text = "최소: \(Int(result.main.tempMin))°C"
-                self.tempMaxLabel.text = "최고: \(Int(result.main.tempMax))°C"
-            }
-            
-            guard let imageUrl = URL(string: "https://openweathermap.org/img/wn/\(result.weather[0].icon)@2x.png") else {
+            guard let result else {
                 return
             }
-            
-            // image를 로드하는 작업은 백그라운드 스레드 작업.
-            if let data = try? Data(contentsOf: imageUrl) {
-                if let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        self.imageView.image = image
-                    }
-                }
+            DispatchQueue.main.async {
+                completion(result)
             }
+            
         }
         
     }
