@@ -4,18 +4,20 @@
 //
 //  Created by 이돈혁 on 8/5/25.
 //
-//  API 통신 및 데이터 처리
+//  날씨 API 통신 및 데이터 처리
 
 import Foundation
 
 class WeatherService {
     
+    private let apiKey: String = Bundle.main.object(forInfoDictionaryKey: "OPEN_WEATHER_API_KEY") as? String ?? ""
+    
     // URL 쿼리 아이템들.
     // 서울역 위경도.
-    private let urlQueryItems: [URLQueryItem] = [
+    private lazy var urlQueryItems: [URLQueryItem] = [
         URLQueryItem(name: "lat", value: "37.5"),
         URLQueryItem(name: "lon", value: "126.9"),
-        URLQueryItem(name: "appid", value: "224ec8dc1a3b32f6c5ce724dd3e17181"),
+        URLQueryItem(name: "appid", value: self.apiKey),
         URLQueryItem(name: "units", value: "metric")
     ]
     
@@ -46,6 +48,11 @@ class WeatherService {
     
     // 서버에서 현재 날씨 데이터를 불러오는 메서드.
     private func fetchCurrentWeatherData(completion: @escaping (CurrentWeather?) -> Void) {
+        guard !apiKey.isEmpty else {
+            print("APIKEY 설정 오류")
+            completion(nil)
+            return
+        }
         var urlComponents = URLComponents(string:"https://api.openweathermap.org/data/2.5/weather")
         urlComponents?.queryItems = self.urlQueryItems
         
