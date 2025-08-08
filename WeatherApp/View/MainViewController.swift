@@ -15,7 +15,7 @@ final class MainViewController: UIViewController {
     private let contentView = UIStackView()
 
     private let segmentedControl = UISegmentedControl(items: ["지역1", "지역2"])
-    private let flashlightButton = UIButton(type: .system)
+    private let ListButton = UIButton(type: .system)
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -73,18 +73,18 @@ final class MainViewController: UIViewController {
         }
 
         // 플래시 버튼
-        bottomBar.addSubview(flashlightButton)
-        flashlightButton.setImage(UIImage(systemName: "flashlight.on.fill"), for: .normal)
-        flashlightButton.tintColor = .white
-        flashlightButton.addTarget(self, action: #selector(flashlightTapped), for: .touchUpInside)
-        flashlightButton.snp.makeConstraints { make in
+        bottomBar.addSubview(ListButton)
+        ListButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
+        ListButton.tintColor = .white
+        ListButton.addTarget(self, action: #selector(ListTapped), for: .touchUpInside)
+        ListButton.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
             make.right.equalToSuperview().inset(16)
             make.width.height.equalTo(32)
         }
     }
 
-    @objc private func flashlightTapped() {
+    @objc private func ListTapped() {
         let listVC = ListViewController()
         navigationController?.pushViewController(listVC, animated: true)
     }
