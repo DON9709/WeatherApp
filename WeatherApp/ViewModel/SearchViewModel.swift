@@ -34,4 +34,13 @@ class SearchViewModel {
     func selectLocation(_ location: String) {
         onLocationSelected?(location)
     }
+
+    func numberOfResults() -> Int {
+        return filteredResults.count
+    }
+
+    func result(at index: Int) -> String? {
+        guard filteredResults.indices.contains(index) else { return nil }
+        return filteredResults[index]
+    }
 }

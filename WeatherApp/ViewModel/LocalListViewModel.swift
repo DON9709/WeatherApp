@@ -7,7 +7,7 @@
 
 import Foundation
 
-class ListViewModel {
+class LocalListViewModel {
     private let storageKey = "savedLocations"
     private(set) var locations: [String] = []
 
@@ -33,6 +33,15 @@ class ListViewModel {
         guard locations.indices.contains(index) else { return }
         locations.remove(at: index)
         save()
+    }
+
+    func numberOfLocations() -> Int {
+        return locations.count
+    }
+
+    func location(at index: Int) -> String? {
+        guard locations.indices.contains(index) else { return nil }
+        return locations[index]
     }
 
     private func save() {

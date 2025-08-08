@@ -18,6 +18,8 @@ class MainViewModel {
     private(set) var weatherList: [WeatherDisplayData] = []
 
     var onUpdate: (() -> Void)?
+    
+    var selectedIndex: Int = 0
 
     func loadWeather(for locations: [String]) {
         weatherList = []
@@ -25,7 +27,7 @@ class MainViewModel {
 
         for city in locations {
             group.enter()
-            weatherService.fetchWeather(for: city) { [weak self] result in // weatherService 아직 안돼있어서 에러 잡힐거임
+            WeatherService.fetchWeather(for: city) { [weak self] result in // weatherService 아직 안돼있어서 에러 잡힐거임
                 defer { group.leave() }
 
                 switch result {
@@ -59,5 +61,19 @@ class MainViewModel {
         case "50d", "50n": return "cloud.fog.fill"
         default: return "cloud"
         }
+    }
+    
+    func numberOfLocations() -> Int {
+        return weatherList.count
+    }
+
+    func titleForSegment(at index: Int) -> String? {
+        guard weatherList.indices.contains(index) else { return nil }
+        return weatherList[index].cityName
+    }
+
+    func currentWeatherData() -> WeatherDisplayData? {
+        guard weatherList.indices.contains(selectedIndex) else { return nil }
+        return weatherList[selectedIndex]
     }
 }
