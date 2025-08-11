@@ -34,30 +34,33 @@ final class WeatherViewModel {
 
     var onUpdate: (() -> Void)?
 
-    func configure(with raw: WeatherRawModel) {
-        // 가정: WeatherRawModel은 외부에서 주입되는 날씨 모델 (예: API 디코딩 결과)
-
+    func configure(with raw: OneCallResponse) {
+        // OneCallResponse는 실제 API 응답 모델
         self.regionData = RegionWeatherData(
-            city: raw.cityName,
-            currentTemp: "\(Int(raw.currentTemp))°",
-            minTemp: "\(Int(raw.minTemp))°",
-            maxTemp: "\(Int(raw.maxTemp))°"
+            city: "", // OneCallResponse에는 cityName이 없으므로, 빈 문자열 또는 외부에서 주입 필요
+            currentTemp: "\(Int(raw.current.temp))°",
+            minTemp: "\(Int(raw.daily.first?.temp.min ?? 0))°",
+            maxTemp: "\(Int(raw.daily.first?.temp.max ?? 0))°"
         )
 
-        self.hourlyData = raw.hourlyList.map {
-            HourlyWeatherItem(
-                hour: $0.hour,
-                icon: mapIcon(from: $0.iconCode),
+        self.hourlyData = raw.hourly.prefix(12).map {
+            let date = Date(timeIntervalSince1970: TimeInterval($0.dt))
+            let hour = DateFormatter.localizedString(from: date, dateStyle: .none, timeStyle: .short)
+            return HourlyWeatherItem(
+                hour: hour,
+                icon: mapIcon(from: $0.weather.first?.icon ?? ""),
                 temp: "\(Int($0.temp))°"
             )
         }
 
-        self.weeklyData = raw.dailyList.map {
-            DailyWeatherItem(
-                day: $0.day,
-                icon: mapIcon(from: $0.iconCode),
-                minTemp: "\(Int($0.minTemp))°",
-                maxTemp: "\(Int($0.maxTemp))°"
+        self.weeklyData = raw.daily.prefix(5).map {
+            let date = Date(timeIntervalSince1970: TimeInterval($0.dt))
+            let day = DateFormatter.localizedString(from: date, dateStyle: .short, timeStyle: .none)
+            return DailyWeatherItem(
+                day: day,
+                icon: mapIcon(from: $0.weather.first?.icon ?? ""),
+                minTemp: "\(Int($0.temp.min))°",
+                maxTemp: "\(Int($0.temp.max))°"
             )
         }
 
