@@ -72,7 +72,10 @@ final class MainViewController: UIViewController {
             make.centerX.equalToSuperview()
         }
 
+
         // 리스트 버튼
+
+
         bottomBar.addSubview(ListButton)
         ListButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
         ListButton.tintColor = .white

@@ -13,15 +13,18 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
     private let searchBar = UISearchBar()
     private let tableView = UITableView()
     
+
     private var results: [GeocodingResult] = []
     private let geocodingService = GeocodingService(apiKey: "<224ec8dc1a3b32f6c5ce724dd3e17181>")
     
     private var searchTask: DispatchWorkItem?
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         setupUI()
+        filteredCities = allCities
     }
     
     private func setupUI() {
@@ -51,6 +54,7 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
     
     // MARK: - Search
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+
         searchTask?.cancel() // 기존 요청 취소
         guard !searchText.isEmpty else {
             results.removeAll()
@@ -80,22 +84,27 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
                 }
             }
         }
-    }
+
     
     // MARK: - Table DataSource & Delegate
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+
         return results.count
+
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell()
+
         let city = results[indexPath.row]
         let state = city.state != nil ? " \(city.state!)" : ""
         cell.textLabel?.text = "\(city.name)\(state), \(city.country)"
+
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+
         let selectedCity = results[indexPath.row]
         
         // 저장할 때는 이름 + 위도/경도 같이 저장하는 게 안전
@@ -111,6 +120,7 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
         // 중복 방지
         if !savedCities.contains(where: { ($0["name"] as? String) == selectedCity.name }) {
             savedCities.append(cityData)
+
             UserDefaults.standard.set(savedCities, forKey: "savedCities")
         }
         
