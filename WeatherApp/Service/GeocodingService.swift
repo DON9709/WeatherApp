@@ -23,12 +23,23 @@ struct GeocodingResult: Codable, Hashable {
     }
 }
 
+// MARK: - 프로토콜 채택
+extension GeocodingService: GeocodingServiceProtocol {}
+
 final class GeocodingService {
     private let base = "https://api.openweathermap.org"
     private let path = "/geo/1.0/direct"
+    private static let hardcodedAPIKey = "<PUT_YOUR_OPENWEATHER_API_KEY_HERE>"
     private let apiKey: String
 
-    init(apiKey: String) { self.apiKey = apiKey }
+    init(apiKey: String = "") {
+        // If caller passes empty or placeholder, use the hardcoded key.
+        if apiKey.isEmpty || apiKey == "<API키>" || apiKey == "<API키>" {
+            self.apiKey = Self.hardcodedAPIKey
+        } else {
+            self.apiKey = apiKey
+        }
+    }
 
     /// 도시명으로 좌표 검색
     func searchCity(_ query: String,

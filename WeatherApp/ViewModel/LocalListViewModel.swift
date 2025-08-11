@@ -8,8 +8,9 @@
 import Foundation
 
 class LocalListViewModel {
-    private let storageKey = "savedLocations"
+    private let storageKey = "savedCities"
     private(set) var locations: [String] = []
+    private(set) var selectedIndices: Set<Int> = []
 
     var onUpdate: (() -> Void)?
 
@@ -20,6 +21,7 @@ class LocalListViewModel {
     func fetchLocations() {
         let defaults = UserDefaults.standard
         locations = defaults.stringArray(forKey: storageKey) ?? []
+        selectedIndices.removeAll()
         onUpdate?()
     }
 
@@ -46,6 +48,29 @@ class LocalListViewModel {
 
     private func save() {
         UserDefaults.standard.set(locations, forKey: storageKey)
+        selectedIndices.removeAll()
         onUpdate?()
+    }
+
+    // MARK: - 선택영역
+    func toggleSelection(at index: Int) {
+        guard locations.indices.contains(index) else { return }
+        if selectedIndices.contains(index) {
+            selectedIndices.remove(index)
+        } else {
+            selectedIndices.insert(index)
+        }
+        onUpdate?()
+    }
+
+    func isSelected(at index: Int) -> Bool {
+        return selectedIndices.contains(index)
+    }
+
+    func deleteSelected() {
+        guard !selectedIndices.isEmpty else { return }
+        let toDelete = selectedIndices
+        locations = locations.enumerated().filter { !toDelete.contains($0.offset) }.map { $0.element }
+        save()
     }
 }

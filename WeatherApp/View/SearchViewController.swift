@@ -10,21 +10,30 @@ import UIKit
 import SnapKit
 
 final class SearchViewController: UIViewController, UISearchBarDelegate, UITableViewDataSource, UITableViewDelegate {
+    private let viewModel: SearchViewModel
     private let searchBar = UISearchBar()
     private let tableView = UITableView()
-    
 
-    private var results: [GeocodingResult] = []
-    private let geocodingService = GeocodingService(apiKey: "<224ec8dc1a3b32f6c5ce724dd3e17181>")
-    
-    private var searchTask: DispatchWorkItem?
+    init(viewModel: SearchViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
 
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         setupUI()
-        filteredCities = allCities
+        
+        viewModel.onResultsUpdate = { [weak self] in
+            self?.tableView.reloadData()
+        }
+        viewModel.onLocationSaved = { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+        }
     }
     
     private func setupUI() {
@@ -52,78 +61,26 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
         navigationController?.popViewController(animated: true)
     }
     
-    // MARK: - Search
+    // MARK: - 검색
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-
-        searchTask?.cancel() // 기존 요청 취소
-        guard !searchText.isEmpty else {
-            results.removeAll()
-            tableView.reloadData()
-            return
-        }
-        
-        // 0.3초 딜레이 후 API 요청 (타이핑 중 호출 방지)
-        let task = DispatchWorkItem { [weak self] in
-            self?.fetchCities(query: searchText)
-        }
-        searchTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: task)
+        viewModel.updateSearch(text: searchText)
     }
     
-    private func fetchCities(query: String) {
-        geocodingService.searchCity(query, limit: 10) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let cities):
-                    self?.results = cities
-                    self?.tableView.reloadData()
-                case .failure(let error):
-                    print("검색 실패:", error)
-                    self?.results.removeAll()
-                    self?.tableView.reloadData()
-                }
-            }
-        }
-
-    
-    // MARK: - Table DataSource & Delegate
+    // MARK: - 테이블 데이터소스 & 델리게이트
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-
-        return results.count
-
+        return viewModel.numberOfResults()
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell()
-
-        let city = results[indexPath.row]
-        let state = city.state != nil ? " \(city.state!)" : ""
-        cell.textLabel?.text = "\(city.name)\(state), \(city.country)"
-
+        if let city = viewModel.result(at: indexPath.row) {
+            let state = city.state.map { " \($0)" } ?? ""
+            cell.textLabel?.text = "\(city.name)\(state), \(city.country)"
+        }
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-
-        let selectedCity = results[indexPath.row]
-        
-        // 저장할 때는 이름 + 위도/경도 같이 저장하는 게 안전
-        var savedCities = UserDefaults.standard.array(forKey: "savedCities") as? [[String: Any]] ?? []
-        
-        let cityData: [String: Any] = [
-            "name": selectedCity.name,
-            "lat": selectedCity.lat,
-            "lon": selectedCity.lon,
-            "country": selectedCity.country
-        ]
-        
-        // 중복 방지
-        if !savedCities.contains(where: { ($0["name"] as? String) == selectedCity.name }) {
-            savedCities.append(cityData)
-
-            UserDefaults.standard.set(savedCities, forKey: "savedCities")
-        }
-        
-        navigationController?.popViewController(animated: true)
+        viewModel.selectResult(at: indexPath.row)
     }
 }
