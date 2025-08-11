@@ -14,7 +14,7 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
     private let tableView = UITableView()
     
     private var results: [GeocodingResult] = []
-    private let geocodingService = GeocodingService(apiKey: "<여기에_본인_API키>")
+    private let geocodingService = GeocodingService(apiKey: "<224ec8dc1a3b32f6c5ce724dd3e17181>")
     
     private var searchTask: DispatchWorkItem?
     
