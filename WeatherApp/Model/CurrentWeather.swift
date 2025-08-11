@@ -12,7 +12,13 @@ import Foundation
 struct CurrentWeather: Codable {
     let weather: [Weather]
     let main: WeatherMain
-    let locationName: String
+    let locationName: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case weather
+        case main
+        case locationName = "name"
+    }
     
     var description: String {
         weather.first?.description ?? ""

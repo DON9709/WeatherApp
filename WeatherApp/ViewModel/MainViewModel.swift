@@ -27,17 +27,19 @@ class MainViewModel {
 
         for city in locations {
             group.enter()
-            WeatherService.fetchWeather(for: city) { [weak self] result in // weatherService 아직 안돼있어서 에러 잡힐거임
+            self.fetchWeather(for: city) { [weak self] result in
                 defer { group.leave() }
 
                 switch result {
-                case .success(let weather):
+                case .success(let current):
                     let display = WeatherDisplayData(
-                        cityName: weather.name,
-                        temperatureText: "\(Int(weather.main.temp))°C",
-                        iconName: self?.mapIcon(code: weather.weather.first?.icon ?? "") ?? "cloud"
+                        cityName: current.locationName ?? city,
+                        temperatureText: "\(Int(current.main.temp))°C",
+                        iconName: self?.mapIcon(code: current.weather.first?.icon ?? "") ?? "cloud"
                     )
-                    self?.weatherList.append(display)
+                    DispatchQueue.main.async {
+                        self?.weatherList.append(display)
+                    }
                 case .failure(let error):
                     print("Error fetching weather for \(city): \(error)")
                 }
@@ -75,5 +77,40 @@ class MainViewModel {
     func currentWeatherData() -> WeatherDisplayData? {
         guard weatherList.indices.contains(selectedIndex) else { return nil }
         return weatherList[selectedIndex]
+    }
+    
+// MARK: - 내부데이터 가져오기 (도시 이름 기반)
+    private func fetchWeather(for city: String, completion: @escaping (Result<CurrentWeather, Error>) -> Void) {
+        let apiKey = Bundle.main.object(forInfoDictionaryKey: "OPEN_WEATHER_API_KEY") as? String ?? ""
+        guard !apiKey.isEmpty else {
+            completion(.failure(NSError(domain: "MainViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing OPEN_WEATHER_API_KEY"])))
+            return
+        }
+        var components = URLComponents(string: "https://api.openweathermap.org/data/2.5/weather")
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: city),
+            URLQueryItem(name: "appid", value: apiKey),
+            URLQueryItem(name: "units", value: "metric")
+        ]
+        guard let url = components?.url else {
+            completion(.failure(NSError(domain: "MainViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                completion(.failure(error)); return
+            }
+            guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode, let data = data else {
+                completion(.failure(NSError(domain: "MainViewModel", code: -3, userInfo: [NSLocalizedDescriptionKey: "Network error or empty data"])))
+                return
+            }
+            do {
+                let current = try JSONDecoder().decode(CurrentWeather.self, from: data)
+                completion(.success(current))
+            } catch {
+                completion(.failure(error))
+            }
+        }
+        task.resume()
     }
 }

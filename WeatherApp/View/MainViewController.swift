@@ -5,8 +5,6 @@
 //  Created by 송명균 on 8/7/25.
 //
 
-
-
 import UIKit
 import SnapKit
 
@@ -74,8 +72,6 @@ final class MainViewController: UIViewController {
 
 
         // 리스트 버튼
-
-
         bottomBar.addSubview(ListButton)
         ListButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
         ListButton.tintColor = .white

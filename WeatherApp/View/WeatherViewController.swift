@@ -30,9 +30,14 @@ final class RegionWeatherCell: UIView {
 
         snp.makeConstraints { $0.height.equalTo(120) }
     }
+
+    // MARK: - 데이터 바인딩
+    func update(with data: RegionWeatherData) {
+        label.text = "\(data.city.isEmpty ? "—" : data.city)  \(data.currentTemp)  (최저 \(data.minTemp) / 최고 \(data.maxTemp))"
+    }
 }
 
-// MARK: - HourlyWeatherCell
+// MARK: - 시간별
 
 final class HourlyWeatherCell: UIView {
     private let collectionView: UICollectionView = {
@@ -42,6 +47,8 @@ final class HourlyWeatherCell: UIView {
         layout.itemSize = CGSize(width: 60, height: 100)
         return UICollectionView(frame: .zero, collectionViewLayout: layout)
     }()
+
+    private var items: [HourlyWeatherItem] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -55,13 +62,49 @@ final class HourlyWeatherCell: UIView {
     private func setup() {
         addSubview(collectionView)
         collectionView.backgroundColor = .clear
+        collectionView.dataSource = self
+        collectionView.register(HourCell.self, forCellWithReuseIdentifier: "HourCell")
         collectionView.snp.makeConstraints { $0.edges.equalToSuperview().inset(16) }
 
         snp.makeConstraints { $0.height.equalTo(140) }
     }
+
+    // MARK: - 데이터 바인딩
+    func update(items: [HourlyWeatherItem]) {
+        self.items = items
+        collectionView.reloadData()
+    }
 }
 
-// MARK: - WeeklyForecastCell
+private final class HourCell: UICollectionViewCell {
+    private let label = UILabel()
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        contentView.addSubview(label)
+        label.numberOfLines = 3
+        label.textAlignment = .center
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 12)
+        label.snp.makeConstraints { $0.edges.equalToSuperview() }
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    func configure(_ item: HourlyWeatherItem) {
+        label.text = "\(item.hour)\n\(item.icon)\n\(item.temp)"
+    }
+}
+
+extension HourlyWeatherCell: UICollectionViewDataSource {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return items.count
+    }
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "HourCell", for: indexPath) as! HourCell
+        cell.configure(items[indexPath.item])
+        return cell
+    }
+}
+
+// MARK: - 주간
 
 final class WeeklyForecastCell: UIView {
     private let stackView = UIStackView()
@@ -91,5 +134,20 @@ final class WeeklyForecastCell: UIView {
 
         snp.makeConstraints { $0.height.equalTo(240) }
     }
-}
 
+    // MARK: - 데이터 바인딩
+    func update(items: [DailyWeatherItem]) {
+        // Clear old rows
+        stackView.arrangedSubviews.forEach { row in
+            stackView.removeArrangedSubview(row)
+            row.removeFromSuperview()
+        }
+        // Add up to 5 rows
+        for item in items.prefix(5) {
+            let row = UILabel()
+            row.text = "\(item.day)   \(item.icon)   최저 \(item.minTemp) / 최고 \(item.maxTemp)"
+            row.textColor = .white
+            stackView.addArrangedSubview(row)
+        }
+    }
+}

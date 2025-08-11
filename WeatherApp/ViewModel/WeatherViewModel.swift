@@ -37,8 +37,8 @@ final class WeatherViewModel {
     func configure(with raw: OneCallResponse) {
         // OneCallResponse는 실제 API 응답 모델
         self.regionData = RegionWeatherData(
-            city: "", // OneCallResponse에는 cityName이 없으므로, 빈 문자열 또는 외부에서 주입 필요
-            currentTemp: "\(Int(raw.current.temp))°",
+            city: "",
+            currentTemp: "\(Int(raw.current.main.temp))°",
             minTemp: "\(Int(raw.daily.first?.temp.min ?? 0))°",
             maxTemp: "\(Int(raw.daily.first?.temp.max ?? 0))°"
         )
@@ -83,5 +83,3 @@ final class WeatherViewModel {
     }
 }
 
-// 이 ViewModel은 외부에서 WeatherRawModel을 받아 configure(with:)로 설정되며,
-// 이후 각 뷰가 필요한 데이터를 접근할 수 있음.
