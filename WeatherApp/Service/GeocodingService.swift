@@ -29,13 +29,11 @@ extension GeocodingService: GeocodingServiceProtocol {}
 final class GeocodingService {
     private let base = "https://api.openweathermap.org"
     private let path = "/geo/1.0/direct"
-    private static let hardcodedAPIKey = "<PUT_YOUR_OPENWEATHER_API_KEY_HERE>"
     private let apiKey: String
 
     init(apiKey: String = "") {
-        // If caller passes empty or placeholder, use the hardcoded key.
-        if apiKey.isEmpty || apiKey == "<API키>" || apiKey == "<API키>" {
-            self.apiKey = Self.hardcodedAPIKey
+        if apiKey.isEmpty {
+            self.apiKey = Bundle.main.object(forInfoDictionaryKey: "OPEN_WEATHER_API_KEY") as? String ?? ""
         } else {
             self.apiKey = apiKey
         }

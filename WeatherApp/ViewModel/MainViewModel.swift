@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 struct WeatherDisplayData {
     let cityName: String
@@ -13,9 +14,15 @@ struct WeatherDisplayData {
     let iconName: String
 }
 
-class MainViewModel {
-    private let weatherService = WeatherService() // 은새씨가 해놨다고 가정함
+class MainViewModel: ObservableObject {
+    private let weatherService = WeatherService() 
     private(set) var weatherList: [WeatherDisplayData] = []
+
+    @Published var currentWeather: CurrentWeather?
+    @Published var errorMessage: String?
+    
+    private(set) var hourlyData: [HourlyWeather] = []
+    private(set) var weeklyData: [DailyWeather] = []
 
     var onUpdate: (() -> Void)?
     
@@ -23,24 +30,43 @@ class MainViewModel {
 
     func loadWeather(for locations: [String]) {
         weatherList = []
+        hourlyData = []
+        weeklyData = []
         let group = DispatchGroup()
 
         for city in locations {
             group.enter()
-            self.fetchWeather(for: city) { [weak self] result in
+            weatherService.fetchWeather(for: city) { [weak self] result in
                 defer { group.leave() }
 
                 switch result {
                 case .success(let current):
+                    self?.currentWeather = current
                     let display = WeatherDisplayData(
                         cityName: current.locationName ?? city,
-                        temperatureText: "\(Int(current.main.temp))°C",
+                        temperatureText: "\(Int(current.main?.temp ?? current.temp ?? 0))°C",
                         iconName: self?.mapIcon(code: current.weather.first?.icon ?? "") ?? "cloud"
                     )
                     DispatchQueue.main.async {
                         self?.weatherList.append(display)
                     }
+                    
+                    if let coord = current.coord {
+                        self?.weatherService.fetchOneCall(lat: coord.lat, lon: coord.lon) { oneCallResult in
+                            switch oneCallResult {
+                            case .success(let oneCall):
+                                DispatchQueue.main.async {
+                                    self?.hourlyData = oneCall.hourly
+                                    self?.weeklyData = oneCall.daily
+                                    self?.onUpdate?()
+                                }
+                            case .failure(let error):
+                                print("OneCall fetch failed: \(error)")
+                            }
+                        }
+                    }
                 case .failure(let error):
+                    self?.errorMessage = "Error fetching weather for \(city): \(error.localizedDescription)"
                     print("Error fetching weather for \(city): \(error)")
                 }
             }
@@ -77,40 +103,5 @@ class MainViewModel {
     func currentWeatherData() -> WeatherDisplayData? {
         guard weatherList.indices.contains(selectedIndex) else { return nil }
         return weatherList[selectedIndex]
-    }
-    
-// MARK: - 내부데이터 가져오기 (도시 이름 기반)
-    private func fetchWeather(for city: String, completion: @escaping (Result<CurrentWeather, Error>) -> Void) {
-        let apiKey = Bundle.main.object(forInfoDictionaryKey: "OPEN_WEATHER_API_KEY") as? String ?? ""
-        guard !apiKey.isEmpty else {
-            completion(.failure(NSError(domain: "MainViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing OPEN_WEATHER_API_KEY"])))
-            return
-        }
-        var components = URLComponents(string: "https://api.openweathermap.org/data/2.5/weather")
-        components?.queryItems = [
-            URLQueryItem(name: "q", value: city),
-            URLQueryItem(name: "appid", value: apiKey),
-            URLQueryItem(name: "units", value: "metric")
-        ]
-        guard let url = components?.url else {
-            completion(.failure(NSError(domain: "MainViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
-            return
-        }
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
-            if let error = error {
-                completion(.failure(error)); return
-            }
-            guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode, let data = data else {
-                completion(.failure(NSError(domain: "MainViewModel", code: -3, userInfo: [NSLocalizedDescriptionKey: "Network error or empty data"])))
-                return
-            }
-            do {
-                let current = try JSONDecoder().decode(CurrentWeather.self, from: data)
-                completion(.success(current))
-            } catch {
-                completion(.failure(error))
-            }
-        }
-        task.resume()
     }
 }
