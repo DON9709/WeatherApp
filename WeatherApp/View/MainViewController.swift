@@ -21,6 +21,7 @@ final class MainViewController: UIViewController {
 
     private let segmentedControl = UISegmentedControl(items: [])
     private let ListButton = UIButton(type: .system)
+    private let ChangeButton = UIButton(type: .system)
 
     // Weather subviews as properties for data updates
     private let regionCell = RegionWeatherCell()
@@ -99,6 +100,15 @@ final class MainViewController: UIViewController {
         ListButton.snp.makeConstraints { make in
             make.centerY.equalToSuperview()
             make.right.equalToSuperview().inset(16)
+            make.width.height.equalTo(32)
+        }
+        //변환 버튼
+        bottomBar.addSubview(ChangeButton)
+        ChangeButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
+        ChangeButton.tintColor = .white
+        ChangeButton.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.left.equalToSuperview().inset(16)
             make.width.height.equalTo(32)
         }
     }
