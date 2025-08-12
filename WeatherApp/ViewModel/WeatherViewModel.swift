@@ -35,7 +35,6 @@ final class WeatherViewModel {
     var onUpdate: (() -> Void)?
 
     func configure(with raw: OneCallResponse) {
-        // OneCallResponse는 실제 API 응답 모델
         self.regionData = RegionWeatherData(
             city: "",
             currentTemp: "\(Int(raw.current.temp ?? raw.current.main?.temp ?? 0))°",
