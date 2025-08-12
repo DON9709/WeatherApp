@@ -34,9 +34,9 @@ final class RegionWeatherCell: UIView {
     // MARK: - 데이터 바인딩
     func update(with data: RegionWeatherData) {
         let cityName = data.city.isEmpty ? "—" : data.city
-        let current = String(format: "%.1f℃", data.currentTemp)
-        let min = String(format: "%.1f℃", data.minTemp)
-        let max = String(format: "%.1f℃", data.maxTemp)
+        let current = String(format: "%.1f°C", data.currentTemp)
+        let min = String(format: "%.1f°C", data.minTemp)
+        let max = String(format: "%.1f°C", data.maxTemp)
         label.text = "\(cityName)  \(current)  (최저 \(min) / 최고 \(max))"
     }
 }
