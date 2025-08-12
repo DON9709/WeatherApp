@@ -32,13 +32,13 @@ final class RegionWeatherCell: UIView {
     }
 
     // MARK: - 데이터 바인딩
-    func update(with data: RegionWeatherData) {
-        let cityName = data.city.isEmpty ? "—" : data.city
-        let current = String(format: "%.1f°C", data.currentTemp)
-        let min = String(format: "%.1f°C", data.minTemp)
-        let max = String(format: "%.1f°C", data.maxTemp)
-        label.text = "\(cityName)  \(current)  (최저 \(min) / 최고 \(max))"
-    }
+//    func update(with data: RegionWeather) {
+//        let cityName = data.city.isEmpty ? "—" : data.city
+//        let current = String(format: "%.1f°C", data.currentTemp)
+//        let min = String(format: "%.1f°C", data.minTemp)
+//        let max = String(format: "%.1f°C", data.maxTemp)
+//        label.text = "\(cityName)  \(current)  (최저 \(min) / 최고 \(max))"
+//    }
 }
 
 // MARK: - 시간별
@@ -52,7 +52,7 @@ final class HourlyWeatherCell: UIView {
         return UICollectionView(frame: .zero, collectionViewLayout: layout)
     }()
 
-    private var items: [HourlyWeatherItem] = []
+   private var items: [HourlyWeather] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -74,7 +74,7 @@ final class HourlyWeatherCell: UIView {
     }
 
     // MARK: - 데이터 바인딩
-    func update(items: [HourlyWeatherItem]) {
+    func update(items: [HourlyWeather]) {
         self.items = items
         collectionView.reloadData()
     }
@@ -92,8 +92,8 @@ private final class HourCell: UICollectionViewCell {
         label.snp.makeConstraints { $0.edges.equalToSuperview() }
     }
     required init?(coder: NSCoder) { fatalError() }
-    func configure(_ item: HourlyWeatherItem) {
-        label.text = "\(item.hour)\n\(item.icon)\n\(item.temp)"
+    func configure(_ item: HourlyWeather) {
+        label.text = "\(item.dt)\n\(item.icon)\n\(item.temp)"
     }
 }
 
@@ -140,7 +140,7 @@ final class WeeklyForecastCell: UIView {
     }
 
     // MARK: - 데이터 바인딩
-    func update(items: [DailyWeatherItem]) {
+   func update(items: [DailyWeather]) {
         // Clear old rows
         stackView.arrangedSubviews.forEach { row in
             stackView.removeArrangedSubview(row)
@@ -149,7 +149,7 @@ final class WeeklyForecastCell: UIView {
         // Add up to 5 rows
         for item in items.prefix(5) {
             let row = UILabel()
-            row.text = "\(item.day)   \(item.icon)   최저 \(item.minTemp) / 최고 \(item.maxTemp)"
+            row.text = "\(item.date)   \(item.icon)   최저 \(item.min) / 최고 \(item.max)"
             row.textColor = .white
             stackView.addArrangedSubview(row)
         }
