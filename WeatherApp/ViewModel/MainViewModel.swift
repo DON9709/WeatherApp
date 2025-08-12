@@ -49,6 +49,7 @@ class MainViewModel: ObservableObject {
                     )
                     DispatchQueue.main.async {
                         self?.weatherList.append(display)
+                        self?.onUpdate?()
                     }
 
                     guard let coord = current.coord else { return }

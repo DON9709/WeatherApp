@@ -32,13 +32,13 @@ final class RegionWeatherCell: UIView {
     }
 
     // MARK: - 데이터 바인딩
-//    func update(with data: RegionWeather) {
-//        let cityName = data.city.isEmpty ? "—" : data.city
-//        let current = String(format: "%.1f°C", data.currentTemp)
-//        let min = String(format: "%.1f°C", data.minTemp)
-//        let max = String(format: "%.1f°C", data.maxTemp)
-//        label.text = "\(cityName)  \(current)  (최저 \(min) / 최고 \(max))"
-//    }
+    func update(with data: CurrentWeather) {
+        let cityName = data.locationName
+        let current = String(format: "%.1f°C", data.temp ?? 0)
+        let min = String(format: "%.1f°C", data.main?.tempMin ?? 0)
+        let max = String(format: "%.1f°C", data.main?.tempMax ?? 0)
+        label.text = "\(cityName)  \(current)  (최저 \(min) / 최고 \(max))"
+    }
 }
 
 // MARK: - 시간별

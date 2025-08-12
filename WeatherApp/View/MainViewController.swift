@@ -136,18 +136,14 @@ final class MainViewController: UIViewController {
         }
         // TODO: 변수 이름 확인
         // Update regionCell with OneCall-based region data
-//      if let region = weatherViewModel.current {
-//            regionCell.update(with: region)
-//        }
+      if let region = weatherViewModel.current {
+            regionCell.update(with: region)
+        }
         
         // Update hourly and weekly cells with actual data
         hourlyCell.update(items: weatherViewModel.hourly)
         weeklyCell.update(items: weatherViewModel.daily)
     }
-    
-    
-    
-    
     
     @objc private func segmentedChanged(_ sender: UISegmentedControl) {
         let idx = sender.selectedSegmentIndex
