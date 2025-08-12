@@ -8,16 +8,10 @@
 
 import Foundation
 
-struct DailyWeather: Codable {
-    let dt: Int
-    let sunrise: Int
-    let sunset: Int
-    let temp: DailyTemperature
-    let pop: Double
-    let weather: [Weather]
-}
-
-struct DailyTemperature: Codable {
+struct DailyWeather {
+    let date: Date
     let min: Double
     let max: Double
+    let icon: String
+    let description: String
 }
