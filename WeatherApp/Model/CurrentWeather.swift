@@ -9,10 +9,25 @@
 
 import Foundation
 
+struct Coord: Codable {
+    let lon: Double
+    let lat: Double
+}
+
 struct CurrentWeather: Codable {
+    let temp: Double?
     let weather: [Weather]
-    let main: WeatherMain
-    let locationName: String
+    let main: WeatherMain?
+    let coord: Coord?
+    let locationName: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case temp
+        case weather
+        case main
+        case coord
+        case locationName = "name"
+    }
     
     var description: String {
         weather.first?.description ?? ""
