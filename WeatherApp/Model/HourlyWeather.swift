@@ -13,7 +13,7 @@ struct HourlyWeather: Codable {
     let temp: Double// 기온(섭씨)
     let pop: Double// 강수확률
     let weather: [Weather]// 날씨 배열
-    let sunrise: Int // 일출 시각
-    let sunset: Int // 일몰 시각
+    let icon: String
+    let description: String
     
 }
