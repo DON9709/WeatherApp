@@ -38,7 +38,7 @@ final class WeatherViewModel {
         // OneCallResponse는 실제 API 응답 모델
         self.regionData = RegionWeatherData(
             city: "",
-            currentTemp: "\(Int(raw.current.main.temp))°",
+            currentTemp: "\(Int(raw.current.temp ?? raw.current.main?.temp ?? 0))°",
             minTemp: "\(Int(raw.daily.first?.temp.min ?? 0))°",
             maxTemp: "\(Int(raw.daily.first?.temp.max ?? 0))°"
         )
