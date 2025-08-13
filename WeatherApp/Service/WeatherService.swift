@@ -1,82 +1,113 @@
-//
-//  WeatherService.swift
-//  WeatherApp
-//
-//  Created by 이돈혁 on 8/5/25.
-//
-//  API 통신 및 데이터 처리
-
+// WeatherService.swift
 import Foundation
 
-class WeatherService {
-    private var dataSource = [ForecastWeather]
-    
-    // URL 쿼리 아이템들.
-    // 서울역 위경도.
-    private let urlQueryItems: [URLQueryItem] = [
-        URLQueryItem(name: "lat", value: "37.5"),
-        URLQueryItem(name: "lon", value: "126.9"),
-        URLQueryItem(name: "appid", value: "224ec8dc1a3b32f6c5ce724dd3e17181"),
-        URLQueryItem(name: "units", value: "metric")
-    ]
-    
-    // 서버 데이터를 불러오는 메서드
-    private func fetchData<T: Decodable>(url: URL, completion: @escaping (T?) -> Void) {
-        let session = URLSession(configuration: .default)
-        session.dataTask(with: URLRequest(url: url)) { data, response, error in
-            guard let data, error == nil else {
-                print("데이터 로드 실패")
-                completion(nil)
+final class NetworkService {
+    func fetch<T: Decodable>(_ url: URL, completion: @escaping (Result<T, Error>) -> Void) {
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error {
+                DispatchQueue.main.async { completion(.failure(error)) }
                 return
             }
-            // http status code 성공 범위는 200번대.
-            let successRange = 200..<300
-            if let response = response as? HTTPURLResponse, successRange.contains(response.statusCode) {
-                guard let decodedData = try? JSONDecoder().decode(T.self, from: data) else {
-                    print("JSON 디코딩 실패")
-                    completion(nil)
-                    return
-                }
-                completion(decodedData)
-            } else {
-                print("응답 오류")
-                completion(nil)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode), let data else {
+                DispatchQueue.main.async { completion(.failure(NSError(domain: "HTTP", code: -1))) }
+                return
+            }
+            do {
+                let decoded = try JSONDecoder().decode(T.self, from: data)
+                DispatchQueue.main.async { completion(.success(decoded)) }
+            } catch {
+                DispatchQueue.main.async { completion(.failure(error)) }
             }
         }.resume()
     }
+}
+
+final class WeatherService {
+    private let apiKey: String = Bundle.main.object(forInfoDictionaryKey: "OPEN_WEATHER_API_KEY") as? String ?? ""
+    private let network = NetworkService()
     
-    // 서버에서 현재 날씨 데이터를 불러오는 메서드.
-    private func fetchCurrentWeatherData() {
-        var urlComponents = URLComponents(string:"https://api.openweathermap.org/data/2.5/weather")
-        urlComponents?.queryItems = self.urlQueryItems
-        
-        guard let url = urlComponents?.url else {
-            print("잘못된 URL")
-            return
+    // MARK: - 현재 날씨 (/data/2.5/weather)
+    func fetchCurrentWeather(lat: Double, lon: Double, completion: @escaping (Result<CurrentWeather, Error>) -> Void) {
+        guard !apiKey.isEmpty else {
+            return completion(.failure(NSError(domain: "API_KEY", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing OPEN_WEATHER_API_KEY"])))
         }
-        
-        fetchData(url: url) { [weak self] (result: CurrentWeather?) in
-            guard let self, let result else { return }
-            
-            DispatchQueue.main.async {
-                self.tempLabel.text = "\(Int(result.main.temp))°C"
-                self.tempMinLabel.text = "최소: \(Int(result.main.tempMin))°C"
-                self.tempMaxLabel.text = "최고: \(Int(result.main.tempMax))°C"
-            }
-            
-            guard let imageUrl = URL(string: "https://openweathermap.org/img/wn/\(result.weather[0].icon)@2x.png") else {
-                return
-            }
-            
-            // image를 로드하는 작업은 백그라운드 스레드 작업.
-            if let data = try? Data(contentsOf: imageUrl) {
-                if let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        self.imageView.image = image
-                    }
-                }
+        var comps = URLComponents(string: "https://api.openweathermap.org/data/2.5/weather")!
+        comps.queryItems = [
+            .init(name: "lat", value: String(lat)),
+            .init(name: "lon", value: String(lon)),
+            .init(name: "appid", value: apiKey),
+            .init(name: "units", value: "metric"),
+        ]
+        guard let url = comps.url else { return completion(.failure(NSError(domain: "URL", code: -2))) }
+        network.fetch(url, completion: completion)
+    }
+    
+    // 도시명으로 현재 날씨
+    func fetchCurrentWeather(city: String, completion: @escaping (Result<CurrentWeather, Error>) -> Void) {
+        guard !apiKey.isEmpty else {
+            return completion(.failure(NSError(domain: "API_KEY", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing OPEN_WEATHER_API_KEY"])))
+        }
+        var comps = URLComponents(string: "https://api.openweathermap.org/data/2.5/weather")!
+        comps.queryItems = [
+            .init(name: "q", value: city),
+            .init(name: "appid", value: apiKey),
+            .init(name: "units", value: "metric"),
+        ]
+        guard let url = comps.url else { return completion(.failure(NSError(domain: "URL", code: -2))) }
+        network.fetch(url, completion: completion)
+    }
+    
+    // MARK: 5일/3시간 예보 (/data/2.5/forecast)
+    func fetchForecast(lat: Double, lon: Double, completion: @escaping (Result<ForecastResponse, Error>) -> Void) {
+        guard !apiKey.isEmpty else {
+            return completion(.failure(NSError(domain: "API_KEY", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing OPEN_WEATHER_API_KEY"])))
+        }
+        var comps = URLComponents(string: "https://api.openweathermap.org/data/2.5/forecast")!
+        comps.queryItems = [
+            .init(name: "lat", value: String(lat)),
+            .init(name: "lon", value: String(lon)),
+            .init(name: "appid", value: apiKey),
+            .init(name: "units", value: "metric"),
+        ]
+        guard let url = comps.url else { return completion(.failure(NSError(domain: "URL", code: -2))) }
+        network.fetch(url, completion: completion)
+    }
+    
+    // 도시명으로 5일/3시간 예보
+    func fetchForecast(city: String, completion: @escaping (Result<ForecastResponse, Error>) -> Void) {
+        guard !apiKey.isEmpty else {
+            return completion(.failure(NSError(domain: "API_KEY", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing OPEN_WEATHER_API_KEY"])))
+        }
+        var comps = URLComponents(string: "https://api.openweathermap.org/data/2.5/forecast")!
+        comps.queryItems = [
+            .init(name: "q", value: city),
+            .init(name: "appid", value: apiKey),
+            .init(name: "units", value: "metric"),
+        ]
+        guard let url = comps.url else { return completion(.failure(NSError(domain: "URL", code: -2))) }
+        network.fetch(url, completion: completion)
+    }
+    
+    // MARK: Hourly / Daily
+    func fetchHourlyWeather(lat: Double, lon: Double, completion: @escaping (Result<[HourlyWeather], Error>) -> Void) {
+        fetchForecast(lat: lat, lon: lon) { result in
+            switch result {
+            case .success(let forecast):
+                completion(.success(forecast.toHourly()))
+            case .failure(let err):
+                completion(.failure(err))
             }
         }
-        
+    }
+    
+    func fetchDailyWeather(lat: Double, lon: Double, completion: @escaping (Result<[DailyWeather], Error>) -> Void) {
+        fetchForecast(lat: lat, lon: lon) { result in
+            switch result {
+            case .success(let forecast):
+                completion(.success(forecast.toDaily()))
+            case .failure(let err):
+                completion(.failure(err))
+            }
+        }
     }
 }
