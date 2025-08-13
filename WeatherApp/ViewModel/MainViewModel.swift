@@ -10,8 +10,10 @@ import Combine
 
 struct WeatherDisplayData {
     let cityName: String
-    let temperatureText: String
+    let weatherDescription: String
     let iconName: String
+    let maxTemp: String
+    let minTemp: String
 }
 
 class MainViewModel: ObservableObject {
@@ -43,9 +45,11 @@ class MainViewModel: ObservableObject {
                 case .success(let current):
                     self?.currentWeather = current
                     let display = WeatherDisplayData(
-                        cityName: current.locationName ?? city,
-                        temperatureText: "\(Int(current.main?.temp ?? 0))°C",
-                        iconName: self?.mapIcon(code: current.weather.first?.icon ?? "") ?? "cloud"
+                        cityName: (current.locationName?.isEmpty == false ? current.locationName! : city),
+                        weatherDescription: current.weather.first?.description ?? "",
+                        iconName: self?.mapIcon(code: current.weather.first?.icon ?? "") ?? "cloud",
+                        maxTemp: "최고 \(Int(current.main?.tempMax ?? 0))°C",
+                        minTemp: "최저 \(Int(current.main?.tempMin ?? 0))°C"
                     )
                     DispatchQueue.main.async {
                         self?.weatherList.append(display)
