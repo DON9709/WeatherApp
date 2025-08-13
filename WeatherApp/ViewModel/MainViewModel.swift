@@ -15,7 +15,7 @@ struct WeatherDisplayData {
 }
 
 class MainViewModel: ObservableObject {
-    private let weatherService = WeatherService() 
+    private let weatherService = WeatherService()
     private(set) var weatherList: [WeatherDisplayData] = []
 
     @Published var currentWeather: CurrentWeather?
@@ -36,7 +36,7 @@ class MainViewModel: ObservableObject {
 
         for city in locations {
             group.enter()
-            weatherService.fetchWeather(for: city) { [weak self] result in
+            self.weatherService.fetchCurrentWeather(city: city) { [weak self] result in
                 defer { group.leave() }
 
                 switch result {
@@ -44,25 +44,36 @@ class MainViewModel: ObservableObject {
                     self?.currentWeather = current
                     let display = WeatherDisplayData(
                         cityName: current.locationName ?? city,
-                        temperatureText: "\(Int(current.main?.temp ?? current.temp ?? 0))°C",
+                        temperatureText: "\(Int(current.main?.temp ?? 0))°C",
                         iconName: self?.mapIcon(code: current.weather.first?.icon ?? "") ?? "cloud"
                     )
                     DispatchQueue.main.async {
                         self?.weatherList.append(display)
+                        self?.onUpdate?()
                     }
-                    
-                    if let coord = current.coord {
-                        self?.weatherService.fetchOneCall(lat: coord.lat, lon: coord.lon) { oneCallResult in
-                            switch oneCallResult {
-                            case .success(let oneCall):
-                                DispatchQueue.main.async {
-                                    self?.hourlyData = oneCall.hourly
-                                    self?.weeklyData = oneCall.daily
-                                    self?.onUpdate?()
-                                }
-                            case .failure(let error):
-                                print("OneCall fetch failed: \(error)")
+
+                    guard let coord = current.coord else { return }
+                    self?.weatherService.fetchHourlyWeather(lat: coord.lat, lon: coord.lon) { result in
+                        switch result {
+                        case .success(let hourly):
+                            DispatchQueue.main.async {
+                                self?.hourlyData = hourly
+                                self?.onUpdate?()
                             }
+                        case .failure(let error):
+                            print("Hourly fetch failed: \(error)")
+                        }
+                    }
+
+                    self?.weatherService.fetchDailyWeather(lat: coord.lat, lon: coord.lon) { result in
+                        switch result {
+                        case .success(let daily):
+                            DispatchQueue.main.async {
+                                self?.weeklyData = daily
+                                self?.onUpdate?()
+                            }
+                        case .failure(let error):
+                            print("Daily fetch failed: \(error)")
                         }
                     }
                 case .failure(let error):
