@@ -10,19 +10,35 @@ import SnapKit
 
 final class ListViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .plain)
-    private var locations: [String] = []
-    private var selectedIndexSet: Set<Int> = []
+    private let viewModel: LocalListViewModel
+
+    // MARK: - Init
+    init(viewModel: LocalListViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    convenience init() {
+        self.init(viewModel: LocalListViewModel())
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
         setupNavigation()
         setupUI()
+        viewModel.onUpdate = { [weak self] in
+            self?.tableView.reloadData()
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        loadSavedCities()
+        viewModel.fetchLocations()
     }
     
     private func setupNavigation() {
@@ -58,34 +74,26 @@ final class ListViewController: UIViewController {
         tableView.register(ListCell.self, forCellReuseIdentifier: "ListCell")
     }
     
-    private func loadSavedCities() {
-        locations = UserDefaults.standard.stringArray(forKey: "savedCities") ?? []
-        tableView.reloadData()
-    }
-    
     @objc private func backButtonTapped() {
         navigationController?.popViewController(animated: true)
     }
     
     private func addLocation() {
-        let searchVC = SearchViewController()
+        // Inject dependencies: reuse the same LocalListViewModel instance and provide a Geocoding service
+        let geocoding = GeocodingService()
+        let searchVM = SearchViewModel(geocoding: geocoding, listViewModel: viewModel)
+        let searchVC = SearchViewController(viewModel: searchVM)
         navigationController?.pushViewController(searchVC, animated: true)
     }
     
     private func deleteSelectedLocations() {
-        locations = locations.enumerated()
-            .filter { !selectedIndexSet.contains($0.offset) }
-            .map { $0.element }
-        
-        selectedIndexSet.removeAll()
-        UserDefaults.standard.set(locations, forKey: "savedCities")
-        tableView.reloadData()
+        viewModel.deleteSelected()
     }
 }
 
 extension ListViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return locations.count + 1
+        return viewModel.numberOfLocations() + 1
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -97,16 +105,11 @@ extension ListViewController: UITableViewDataSource, UITableViewDelegate {
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "ListCell", for: indexPath) as! ListCell
             let row = indexPath.row - 1
-            let isSelected = selectedIndexSet.contains(row)
-            cell.configure(title: locations[row], isChecked: isSelected)
+            let title = viewModel.location(at: row) ?? ""
+            let isSelected = viewModel.isSelected(at: row)
+            cell.configure(title: title, isChecked: isSelected)
             cell.checkButtonAction = { [weak self] in
-                guard let self = self else { return }
-                if isSelected {
-                    self.selectedIndexSet.remove(row)
-                } else {
-                    self.selectedIndexSet.insert(row)
-                }
-                tableView.reloadRows(at: [indexPath], with: .automatic)
+                self?.viewModel.toggleSelection(at: row)
             }
             return cell
         }
@@ -128,13 +131,24 @@ final class ButtonRowCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        backgroundColor = UIColor.systemGray6
+
+        backgroundColor = UIColor.systemGray2
         
         addButton.setImage(UIImage(systemName: "plus"), for: .normal)
         addButton.tintColor = .systemBlue
+        addButton.layer.borderWidth = 1
+        addButton.layer.borderColor = UIColor.systemGray4.cgColor
+        addButton.layer.cornerRadius = 8
+        addButton.clipsToBounds = true
         
         deleteButton.setImage(UIImage(systemName: "trash"), for: .normal)
         deleteButton.tintColor = .red
+        deleteButton.layer.borderWidth = 1
+        deleteButton.layer.borderColor = UIColor.systemGray4.cgColor
+        deleteButton.layer.cornerRadius = 8
+        deleteButton.clipsToBounds = true
+       
+
         
         let stack = UIStackView(arrangedSubviews: [addButton, deleteButton])
         stack.axis = .horizontal

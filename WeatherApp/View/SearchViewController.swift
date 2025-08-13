@@ -10,21 +10,30 @@ import UIKit
 import SnapKit
 
 final class SearchViewController: UIViewController, UISearchBarDelegate, UITableViewDataSource, UITableViewDelegate {
+    private let viewModel: SearchViewModel
     private let searchBar = UISearchBar()
     private let tableView = UITableView()
-    
-    private let allCities = [
-        "서울", "부산", "대구", "인천", "광주", "대전", "울산",
-        "수원", "창원", "성남", "고양", "용인", "전주", "천안", "안산",
-        "제주", "포항", "김해", "청주", "춘천"
-    ]
-    private var filteredCities: [String] = []
+
+    init(viewModel: SearchViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         setupUI()
-        filteredCities = allCities
+        
+        viewModel.onResultsUpdate = { [weak self] in
+            self?.tableView.reloadData()
+        }
+        viewModel.onLocationSaved = { [weak self] in
+            self?.navigationController?.popViewController(animated: true)
+        }
     }
     
     private func setupUI() {
@@ -32,7 +41,7 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
         
         view.addSubview(searchBar)
         searchBar.delegate = self
-        searchBar.placeholder = "Search"
+        searchBar.placeholder = "도시 이름 검색"
         searchBar.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide)
             $0.left.right.equalToSuperview()
@@ -52,34 +61,26 @@ final class SearchViewController: UIViewController, UISearchBarDelegate, UITable
         navigationController?.popViewController(animated: true)
     }
     
-    // MARK: - Search
+    // MARK: - 검색
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        filteredCities = searchText.isEmpty
-            ? allCities
-            : allCities.filter { $0.localizedCaseInsensitiveContains(searchText) }
-        tableView.reloadData()
+        viewModel.updateSearch(text: searchText)
     }
     
-    // MARK: - Table DataSource & Delegate
+    // MARK: - 테이블 데이터소스 & 델리게이트
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return filteredCities.count
+        return viewModel.numberOfResults()
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell()
-        cell.textLabel?.text = filteredCities[indexPath.row]
+        if let city = viewModel.result(at: indexPath.row) {
+            let state = city.state.map { " \($0)" } ?? ""
+            cell.textLabel?.text = "\(city.name)\(state), \(city.country)"
+        }
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedCity = filteredCities[indexPath.row]
-        
-        var savedCities = UserDefaults.standard.stringArray(forKey: "savedCities") ?? []
-        if !savedCities.contains(selectedCity) {
-            savedCities.append(selectedCity)
-            UserDefaults.standard.set(savedCities, forKey: "savedCities")
-        }
-        
-        navigationController?.popViewController(animated: true)
+        viewModel.selectResult(at: indexPath.row)
     }
 }
